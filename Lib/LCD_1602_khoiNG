@@ -1,0 +1,54 @@
+#define LCD_data P0
+
+sbit RS = P2^6;
+sbit WR = P2^5;
+sbit EN = P2^7;
+
+void Delay_1ms(unsigned char count){
+	int i,j;
+	for(i=0;i<count;i++)
+	for(j=0;j<112;j++);
+}
+
+void LCD_command(unsigned char cmd) {
+	LCD_data = cmd;
+	RS = 0; // chon thanh ghi lenh
+	WR = 0; // Ghi data toi LCD
+	EN = 1; // 
+	Delay_1ms(1);
+	EN = 0;
+	Delay_1ms(5);
+}
+
+void write_char(unsigned char char_data){
+	LCD_data = char_data;
+	RS = 1; // chon thanh ghi lenh
+	WR = 0; // Ghi data toi LCD
+	EN = 1; // 
+	Delay_1ms(1);
+	EN = 0;
+	Delay_1ms(5);
+}
+
+void LCD_write_string(unsigned *str){
+	int i;
+	for(i=0;str[i]!=0;i++)  /* Send each char of string till the NULL */
+	{
+		LCD_Char (str[i]);  /* Call LCD data write */
+	}
+}
+
+void LCD_write_string_xy(char row, char pos, char *str){
+	if (row == 0)
+		LCD_command((pos & 0x0F)|0x80);
+	else if (row == 1)
+		LCD_command((pos & 0x0F)|0xC0);
+		LCD_write_string(str);	/* Call LCD string function */
+}
+
+void LCD_init() {
+	delay(20);		/* LCD Power ON Initialization time >15ms */
+	LCD_Command (0x38);	/* Initialization of 16X2 LCD in 8bit mode */
+	LCD_Command (0x01);	/* clear display */
+	LCD_Command (0x80);	/* dat con tro vi tri dau hang */
+}
