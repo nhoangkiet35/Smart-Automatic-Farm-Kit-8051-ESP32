@@ -1,9 +1,6 @@
 /*
  * Created Date: Wednesday, July 16th 2025, 3:06:29 pm
  * Author: Hoang Kiet
- *
- * Purpose: Controls the LCD 1602 display (8-bit mode, 2 lines, 5x8 font) to show real-time sensor data (soil moisture,
- * temperature, humidity, water level).
  */
 #ifndef LCD_1602_H
 #define LCD_1602_H

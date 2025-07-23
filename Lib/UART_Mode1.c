@@ -12,29 +12,25 @@
  */
 void UART_Init()
 {
-    unsigned int baudrate = 9600;
-    unsigned int reload_value;
-
-    SCON = 0x50;  // Mode 1: 8-bit UART, REN enabled
+    SCON = 0x50;  // Mode 1: 8-bit UART, REN enabled (Tx Rx enable)
     TMOD &= 0x0F; // Clear upper 4 bits (Timer1)
     TMOD |= 0x20; // Timer1 Mode 2: 8-bit auto-reload
-
-    // Calculate TH1 reload value for 11.0592 MHz clock
-    reload_value = 256 - (11059200UL / (12UL * 32UL * baudrate));
-    TH1 = (unsigned char)reload_value;
-
-    TR1 = 1; // Start Timer1
-    TI = 1;  // Set TI to indicate ready to send
+    TL1 = 0xFD;   // baud = 9600
+    TH1 = 0xFD;   // baud = 9600
+    TI = 1;       // Set TI to indicate ready to send
+    TR1 = 1;      // Start Timer1
 }
 
 /**
- * @brief Sends a single character over UART.
- * @param c Character to transmit.
+ * @brief Transmitting 8 bit data
+ * @param value Character to transmit.
+ *
+ * Description: Send 8-bit data while calling this function to send it over UART
  */
-void UART_Write(char c)
+void UART_Write(unsigned char value)
 {
-    SBUF = c;
-    while (TI == 0)
+    SBUF = value;
+    while (!TI)
         ;
     TI = 0;
 }
@@ -46,9 +42,7 @@ void UART_Write(char c)
 void UART_Write_String(char *str)
 {
     while (*str)
-    {
         UART_Write(*str++);
-    }
 }
 
 /**
@@ -57,7 +51,7 @@ void UART_Write_String(char *str)
  */
 char UART_Read(void)
 {
-    while (RI == 0)
+    while (!RI)
         ; // Wait for character
     RI = 0;
     return SBUF;
@@ -79,8 +73,6 @@ void UART_Read_String(char *buffer, unsigned char max_length)
         if (c == '\r' || c == '\n')
             break;
         buffer[i++] = c;
-        UART_Write(c); // Optional: echo character
     }
-
     buffer[i] = '\0'; // Null-terminate
 }

@@ -8,15 +8,6 @@
  * @brief Creates blocking software delay
  * @details Generates approximate delay time by executing NOP operations.
  *          Timing is calibrated for 11.0592MHz crystal oscillator.
- *
- * @param count Number of delay units (approximately milliseconds at 11.0592MHz)
- * @return None
- *
- * @note Actual delay time depends on:
- *       - CPU clock frequency
- *       - Compiler optimization settings
- *       - Interrupt activity
- * @warning This is a busy-wait delay that blocks CPU execution
  */
 void delay(unsigned int count)
 {
@@ -39,34 +30,3 @@ void delay(unsigned int count)
  * Time value = 65536 - (1000 * 0.9216) = 64614
  * => TH0 = 64614/256 = 252 (0xFC), TL0 = 64614%256 = 66 (0x42)
  */
-void Timer0_Init(void)
-{
-    TMOD &= 0xF0; // Remove configure Timer0
-    TMOD |= 0x01; // Mode 1: 16-bit timer
-    TH0 = 0xFC;   // Load value to generate ~1ms (11.0592MHz)
-    TL0 = 0x42;   // TH0:TL0 = FC66H => 1ms
-    ET0 = 1;      // Allow interrupt Timer0
-    EA = 1;       // Allow all interrupt
-    TR0 = 1;      // Timer0 Run
-}
-
-/**
- * @brief Returns number of ms since Timer0 started
- */
-unsigned long Timer0_GetMillis(void)
-{
-    unsigned long ms;
-    EA = 0; // Temporarily disable interrupts to avoid errors when reading variables
-    ms = millis_counter;
-    EA = 1; // Enable interrupt again
-    return ms;
-}
-/**
- * @brief Timer0 interrupt function (triggered every 1ms)
- */
-void Timer0_ISR(void) interrupt 1
-{
-    TH0 = 0xFC; // Reload to keep cycle 1ms
-    TL0 = 0x42;
-    millis_counter++;
-}

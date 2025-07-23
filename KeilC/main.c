@@ -24,24 +24,17 @@ sbit BUTTON_PUMP = P3 ^ 1;     // Button for pump control
 sbit BUTTON_FAN = P3 ^ 2;      // Button for fan control
 sbit BUTTON_ALERT = P3 ^ 3;    // Button for low water level alert
 
-// Define variables
-unsigned long last_update = 0;
-
-// Function prototypes
-unsigned char debounce_button(sbit, unsigned long *, unsigned char);
-
 // Main function
 void main(void)
 {
     unsigned int soil_moisture, water_level, temperature, humidity;
-    unsigned char lcd_buffer[16], buffer[40];
+    unsigned char lcd_buffer[16], buffer[32];
 
     // Initialize peripherals
     SoilMoisture_Init();
     WaterLevel_Init();
     LCD_Init();
     UART_Init();
-    Timer0_Init();
     delay(100); // Wait for system stabilization
 
     // Configure L298N control pins as output
@@ -62,17 +55,6 @@ void main(void)
         water_level = getWaterLevel();     // 1, 50, 100
         temperature = getTemperature();    // ℃
         humidity = getHumidity();          // %
-
-        /* Send data to ESP32 via UART for ThingsBoard */
-        // Check every 5 seconds
-        if (Timer0_GetMillis() - last_update >= 5000)
-        {
-            last_update = Timer0_GetMillis();
-            // Send UART data with 4 variables
-            sprintf(buffer, "soil:%d,temp:%d,hum:%d,water:%d", soil_moisture, temperature, humidity, water_level);
-            UART_Write_String(buffer);
-            UART_Write('\n');
-        }
 
         /* DEBUG */
         LCD_String_xy(0, 0, "Enter a number: ");
@@ -172,24 +154,11 @@ void main(void)
                     ; // Wait for release
             }
         }
+		
+		/* Send data to ESP32 via UART for ThingsBoard */
+		// Send UART data with 4 variables "soil:%d,temp:%d,hum:%d,water:%d"
 
         // Delay before next iteration
         delay(3000); // Short delay to keep system responsive
     }
-}
-
-unsigned char debounce_button(sbit button, unsigned long *last_time, unsigned char id)
-{
-    static unsigned char last_state[4] = {1, 1, 1, 1}; // Assume active-low
-    unsigned char current_state = button;
-    unsigned long current_time = Timer0_GetMillis();
-
-    if (current_state != last_state[id] && (current_time - *last_time) > 50)
-    {
-        *last_time = current_time;
-        last_state[id] = current_state;
-        if (current_state == 0)
-            return 1; // button pressed
-    }
-    return 0;
 }

@@ -16,7 +16,6 @@ unsigned int getWaterLevel(void)
      * 50  -> Half
      * 100 -> Full
      */
-
     if (WATER_LEVEL_MIN_PIN == 0 && WATER_LEVEL_MAX_PIN == 0)
         return 1; // Empty
     else if (WATER_LEVEL_MIN_PIN == 1 && WATER_LEVEL_MAX_PIN == 0)

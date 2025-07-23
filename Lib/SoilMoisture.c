@@ -1,5 +1,4 @@
 #include "SoilMoisture.h"
-#include "delay.h"
 
 // Initialize Soil Moisture Sensor
 void SoilMoisture_Init(void)
