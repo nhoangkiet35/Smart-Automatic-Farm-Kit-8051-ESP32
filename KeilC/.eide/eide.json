@@ -1,0 +1,76 @@
+{
+  "name": "KEILC",
+  "type": "C51",
+  "dependenceList": [],
+  "srcDirs": [],
+  "virtualFolder": {
+    "name": "<virtual_root>",
+    "files": [],
+    "folders": [
+      {
+        "name": "Source Group 1",
+        "files": [
+          {
+            "path": "STARTUP.A51"
+          },
+          {
+            "path": "main.c"
+          }
+        ],
+        "folders": []
+      }
+    ]
+  },
+  "outDir": "build",
+  "deviceName": null,
+  "packDir": null,
+  "miscInfo": {
+    "uid": "58805b6e269e5de4ccafc2136733cfa1"
+  },
+  "targets": {
+    "Target 1": {
+      "excludeList": [],
+      "toolchain": "Keil_C51",
+      "compileConfig": {
+        "options": "null"
+      },
+      "uploader": "Custom",
+      "uploadConfig": {
+        "bin": "",
+        "commandLine": "",
+        "eraseChipCommand": ""
+      },
+      "uploadConfigMap": {},
+      "custom_dep": {
+        "name": "default",
+        "incList": [
+          "../../../../../../Keil_v5/C51/INC/Atmel"
+        ],
+        "libList": [],
+        "defineList": []
+      },
+      "builderOptions": {
+        "Keil_C51": {
+          "version": 2,
+          "beforeBuildTasks": [],
+          "afterBuildTasks": [],
+          "global": {
+            "ram-mode": "SMALL",
+            "rom-mode": "LARGE"
+          },
+          "c/cpp-compiler": {
+            "optimization-type": "SPEED",
+            "optimization-level": "level-8"
+          },
+          "asm-compiler": {},
+          "linker": {
+            "remove-unused": true,
+            "output-format": "elf",
+            "misc-controls": ""
+          }
+        }
+      }
+    }
+  },
+  "version": "3.6"
+}
