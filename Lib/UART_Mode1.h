@@ -1,56 +1,45 @@
-void UART_Init()
-{
-	SM0 = 0;
-	SM1 = 1;
-	//SCON = 0x40; 		// 0100 0000 - Mode 1
-	TMOD = 0x20; 			// 0010 xxxx - Timer 1 8 bit auto reload
-	TH1 = 0xFD; 			// 9600 Baud Rate
-	TR1 = 1; 					// start Timer 1
-	
-	REN = 1;					// Receive Enable
-	//SCON = 0x50; 		// 0101 0000 - Mode 1 and Receive Enable
-}
+/*
+ * Created Date: Wednesday, July 16th 2025, 3:08:31 pm
+ * Author: Hoang Kiet
+ *
+ * Purpose: Implements UART communication in Mode 1 (8-bit, variable baud rate) for the 8051 microcontroller
+ * to communicate with the ESP32.
+ */
+#ifndef _UART_MODE1_H_
+#define _UART_MODE1_H_
 
-void UART_Write (char c)
-{
-	SBUF = c ;
-	while (TI == 0);
-	TI = 0;
-}
+#include <REGX52.H>
 
-void UART_Write_String (char *str)
-{
-	unsigned char i = 0;
-	while (str[i] != 0)
-	{
-		UART_Write (str[i]);
-		i++;
-	}
-}
+/**
+ * @brief Initializes UART in Mode 1 (8-bit, variable baud rate).
+ * @param baudrate Desired baud rate (e.g., 9600, 4800). Use standard values.
+ *        Assumes 11.0592 MHz system clock.
+ */
+void UART_Init();
 
-char UART_Read ()
-{
-	RI = 0;
-	return SBUF;
-}
+/**
+ * @brief Sends a single character via UART.
+ * @param c The character to send.
+ */
+void UART_Write(char c);
 
-char UART_ReadString (char *buffer, unsigned char maxLength)
-{
-	unsigned char i = 0;
-	char c;
+/**
+ * @brief Sends a null-terminated string via UART.
+ * @param str Pointer to the string to send.
+ */
+void UART_Write_String(char *str);
 
-	while (1)
-	{
-		while (RI == 0);   // Wait for data
-		c = SBUF;
-		RI = 0;
+/**
+ * @brief Receives a single character via UART.
+ * @return The received character.
+ */
+char UART_Read(void);
 
-		if (c == '\r' || c == '\n')  // End of input
-			break;
+/**
+ * @brief Reads a string from UART until newline, carriage return, or max length.
+ * @param buffer Pointer to buffer to store received string.
+ * @param max_length Maximum characters to read (including null terminator).
+ */
+void UART_Read_String(char *buffer, unsigned char max_length);
 
-		if (i < maxLength - 1)      // Protect against overflow
-		
-			buffer[i++] = c;
-	}
-	buffer[i] = '\0';  // Null-terminate the string
-}
+#endif // _UART_MODE1_H_

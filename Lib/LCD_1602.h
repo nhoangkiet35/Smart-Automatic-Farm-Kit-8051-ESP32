@@ -1,64 +1,60 @@
-#define lcd_data_port P0
+/*
+ * Created Date: Wednesday, July 16th 2025, 3:06:29 pm
+ * Author: Hoang Kiet
+ *
+ * Purpose: Controls the LCD 1602 display (8-bit mode, 2 lines, 5x8 font) to show real-time sensor data (soil moisture,
+ * temperature, humidity, water level).
+ */
+#ifndef LCD_1602_H
+#define LCD_1602_H
 
-//sfr lcd_data_port = 0x80;		/* P0 port as data port */
+#include "delay.h"
+#include <REGX52.H>
 
-sbit rs=P2^6;			/* Register select pin */
-sbit rw=P2^5;			/* Read/Write pin */
-sbit en=P2^7;			/* Enable pin */
+/**
+ * @def LCD_DATA_PORT
+ * @brief Data port for LCD interface (8-bit mode)
+ * @details P0.0 to P0.7 connected to LCD D0-D7 pins
+ */
+#define LCD_DATA_PORT P0
 
-void delay(unsigned int count)  /* Function to provide delay Approx 1ms */
-{
-	int i,j;
-	for(i=0;i<count;i++)
-	for(j=0;j<112;j++);
-}
+/**
+ * @brief LCD control pins
+ */
+sbit rs = P2 ^ 6; ///< Register Select (Command/Data)
+sbit rw = P2 ^ 5; ///< Read/Write control
+sbit en = P2 ^ 7; ///< Enable pulse
 
-void LCD_Command (unsigned char cmd)  /* LCD16x2 command funtion */
-{
-	lcd_data_port = cmd;
-	rs=0;			/* command reg. */
-	rw=0;			/* Write operation */
-	en=1; 
-	delay(1);
-	en=0;
-	delay(5);
-}
+/**
+ * @brief Send command to LCD
+ * @param cmd Command byte to send
+ */
+void LCD_Command(unsigned char cmd);
 
-void LCD_Char (unsigned char char_data)  /* LCD data write function */
-{
-	lcd_data_port=char_data;
-	rs=1;			/* Data reg.*/
-	rw=0;			/* Write operation*/
-	en=1;   				
-	delay(1);
-	en=0;
-	delay(5);
-}
+/**
+ * @brief Write character to LCD
+ * @param char_data Character to display
+ */
+void LCD_Write(unsigned char char_data);
 
-void LCD_String (unsigned char *str) /* Send string to LCD function */
-{
-	for(int i=0; str[i]!=0; i++)  /* Send each char of string till the NULL */
-	{
-		LCD_Char (str[i]);  /* Call LCD data write */
-	}
-}
+/**
+ * @brief Write string to LCD
+ * @param str Null-terminated string to display
+ */
+void LCD_String(unsigned char *str);
 
-void LCD_String_xy (char row, char pos, char *str)  /* Send string to LCD function */
-{
-	if (row == 0)
-	LCD_Command((pos & 0x0F)|0x80);
-	else if (row == 1)
-	LCD_Command((pos & 0x0F)|0xC0);
-	LCD_String(str);	/* Call LCD string function */
-}
+/**
+ * @brief Write string at specific position
+ * @param row 0 for first line, 1 for second line
+ * @param position Column position (0-15)
+ * @param str String to display
+ */
+void LCD_String_xy(char row, char position, char *str);
 
-void LCD_Init (void)		/* LCD Initialize function */
-{	
-	delay(20);		/* LCD Power ON Initialization time >15ms */
-	LCD_Command (0x38);	/* Initialization of 16X2 LCD in 8bit mode */
-	LCD_Command (0x0C);	/* Display ON Cursor OFF */
-	LCD_Command (0x06);	/* Auto Increment cursor */
-	LCD_Command (0x01);	/* clear display */
-	
-LCD_Command (0x80);	/* cursor at home position */
-}
+/**
+ * @brief Initialize LCD module
+ * @details Configures LCD in 8-bit mode, 2 lines, 5x8 font
+ */
+void LCD_Init(void);
+
+#endif /* LCD_1602_H */

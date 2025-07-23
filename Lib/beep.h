@@ -1,24 +1,34 @@
-sbit buzzer = P2^5;
+/*
+ * Created Date: Wednesday, July 16th 2025, 3:08:05 pm
+ * Author: Hoang Kiet
+ */
+#ifndef BEEP_H
+#define BEEP_H
 
-void delay_beep(unsigned int time){//tinh bang us
-	TMOD &=0xF0;
-	TMOD |= 0x01;
-	TH0 = (65536 - time) >> 8;
-	TL0 = (65536 - time) & 0x00FF;
-	TR0 = 1;
-	while(TF0 == 0);
-	TF0 = 0;
-	TR0 = 0;
-}
-void delay_beep2(unsigned int time){
-	while(time--){};
-}
-void beep(unsigned int period, unsigned int t){ // period tinh bang us, t tinh bang ms
-	unsigned int i;
-	for( i = 0; i < t;i++){
-		buzzer = 1;
-		delay_beep(period/2);
-		buzzer = 0;
-		delay_beep(period/2);
-	}
-}
+#include <REGX52.H>
+
+/**
+ * @brief Define buzzer pin (assuming connected to P2.5, adjust if needed)
+ */
+sbit buzzer = P2 ^ 5;
+
+/**
+ * @brief Delay using Timer0 for beep (µs)
+ * @param time delay time in µs
+ */
+void delay_beep(unsigned int time);
+
+/**
+ * @brief Simple Delay (not exact, loop form)
+ * @param time delay time
+ */
+void delay_beep2(unsigned int time);
+
+/**
+ * @brief Play beep
+ * @param period Beep period (µs)
+ * @param t Play time (ms)
+ */
+void beep(unsigned int period, unsigned int t);
+
+#endif
