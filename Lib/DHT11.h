@@ -8,8 +8,6 @@
 #define __DHT11_H__
 
 #include <REGX52.H>
-#include <stdio.h>
-#include <string.h>
 
 // Define pins to communicate with DHT11
 sbit DHT11 = P1 ^ 1; // Pin P1.1 connects to DHT11
@@ -28,7 +26,6 @@ void Request(void);         // Send request signal to DHT11
 void Response(void);        // Receive response from DHT11
 int Receive_data(void);     // Receive 1 data byte (8 bits)
 
-void getInfo_TemperatureAndHumidity(char *); // Read temperature - humidity and check for errors
 unsigned int getTemperature(void);
 unsigned int getHumidity(void);
 

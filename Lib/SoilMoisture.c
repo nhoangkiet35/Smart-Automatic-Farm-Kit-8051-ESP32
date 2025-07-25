@@ -18,8 +18,3 @@ unsigned int getSoilMoisture(void)
     else // High = dry
         return 0;
 }
-
-unsigned char readSoilSensor(void)
-{
-    return SOIL_MOISTURE_PIN; // return 0 or 1
-}

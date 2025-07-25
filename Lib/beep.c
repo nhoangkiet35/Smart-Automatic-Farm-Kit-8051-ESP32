@@ -30,15 +30,6 @@ void delay_beep(unsigned int time)
 }
 
 /**
- * @brief Simple delay using loop (not exact)
- */
-void delay_beep2(unsigned int time)
-{
-    while (time--)
-        ;
-}
-
-/**
  * @brief Play a beep with the specified number of times and period
  * @param period: Beep period (in ms) — will divide by 2 to turn on/off
  * @param t: number of beeps

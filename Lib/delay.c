@@ -6,8 +6,6 @@
 
 /**
  * @brief Creates blocking software delay
- * @details Generates approximate delay time by executing NOP operations.
- *          Timing is calibrated for 11.0592MHz crystal oscillator.
  */
 void delay(unsigned int count)
 {
@@ -24,7 +22,7 @@ void delay(unsigned int count)
 /**
  * @brief Initialize Timer0 to generate interrupt every 1ms
  * @note Formula for calculating Timer0 time value:
- *		Time value = 65536 - ((Delay time (µs) * Crystal Frequency (Hz)) / Timer Clock Division)
+ *		Time value = 65536 - ((Delay time (ï¿½s) * Crystal Frequency (Hz)) / Timer Clock Division)
  *
  * Where: TCD usually 12 in standard 8051
  * Time value = 65536 - (1000 * 0.9216) = 64614

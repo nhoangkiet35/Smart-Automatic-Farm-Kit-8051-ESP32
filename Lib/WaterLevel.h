@@ -9,7 +9,6 @@ sbit WATER_LEVEL_MAX_PIN = P1 ^ 3; // Full level sensor
 
 // Function prototypes
 void WaterLevel_Init(void);
-void getWaterInfo(char *lcd_buffer);
 unsigned int getWaterLevel(void);
 
 #endif

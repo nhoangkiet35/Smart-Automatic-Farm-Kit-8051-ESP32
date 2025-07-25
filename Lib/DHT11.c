@@ -101,16 +101,6 @@ int Receive_data(void)
     return c;
 }
 
-void getInfo_TemperatureAndHumidity(char *lcd_buffer)
-{
-    sprintf(lcd_buffer, "Temp: %d.%d", I_Temp, D_Temp);
-    LCD_String_xy(0, 0, lcd_buffer);
-    LCD_String_xy(0, 11, "*C");
-    sprintf(lcd_buffer, "Hum : %d.%d", I_RH, D_RH);
-    LCD_String_xy(1, 0, lcd_buffer);
-    LCD_String_xy(1, 11, "%");
-}
-
 unsigned int getTemperature(void)
 {
     /*
@@ -138,7 +128,7 @@ unsigned int getTemperature(void)
     // Check checksum error
     if ((I_RH + D_RH + I_Temp + D_Temp) != CheckSum)
         return 0;
-	
+
     return I_Temp;
 }
 

@@ -5,8 +5,6 @@
 #ifndef DELAY_H
 #define DELAY_H
 
-#include <REGX52.H>
-
 /**
  * @brief Delay with 11.0592MHz crystal
  */

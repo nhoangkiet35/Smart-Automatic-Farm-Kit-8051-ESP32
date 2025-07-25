@@ -19,12 +19,6 @@ sbit buzzer = P2 ^ 5;
 void delay_beep(unsigned int time);
 
 /**
- * @brief Simple Delay (not exact, loop form)
- * @param time delay time
- */
-void delay_beep2(unsigned int time);
-
-/**
  * @brief Play beep
  * @param period Beep period (µs)
  * @param t Play time (ms)
