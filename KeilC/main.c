@@ -1,4 +1,5 @@
 /*
+ * Project: ESP32 MQTT + ThingsBoard Smart Automatic Farm Kit 8051-ESP32
  * Created Date: Wednesday, July 5th 2025, 3:39:18 pm
  */
 
@@ -154,7 +155,6 @@ void main(void)
 
         /* DEBUG Send data to ESP32 via UART once 20s */
         // Send UART data with 4 variables "soil,temp,hum,water"
-        uart_timer++;
         if (uart_timer == UART_SEND_INTERVAL) {
             // if (abs(soil_moisture - last_soil) > 5 || abs(temperature - last_temp) > 1 ||
             //     abs(humidity - last_hum) > 5 || abs(water_level - last_water) > 10) {
@@ -173,6 +173,7 @@ void main(void)
             // }
             uart_timer = 0; // Reset timer
         }
+        uart_timer++;
         // Delay before next iteration
         delay(2000); // Short delay to keep system responsive
     }
