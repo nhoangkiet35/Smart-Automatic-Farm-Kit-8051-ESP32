@@ -15,6 +15,48 @@
           },
           {
             "path": "main.c"
+          },
+          {
+            "path": "../Lib/delay.c"
+          },
+          {
+            "path": "../Lib/delay.h"
+          },
+          {
+            "path": "../Lib/DHT11.c"
+          },
+          {
+            "path": "../Lib/DHT11.h"
+          },
+          {
+            "path": "../Lib/LCD_1602.c"
+          },
+          {
+            "path": "../Lib/LCD_1602.h"
+          },
+          {
+            "path": "../Lib/UART_Mode1.c"
+          },
+          {
+            "path": "../Lib/UART_Mode1.h"
+          },
+          {
+            "path": "../Lib/beep.c"
+          },
+          {
+            "path": "../Lib/beep.h"
+          },
+          {
+            "path": "../Lib/SoilMoisture.c"
+          },
+          {
+            "path": "../Lib/SoilMoisture.h"
+          },
+          {
+            "path": "../Lib/WaterLevel.c"
+          },
+          {
+            "path": "../Lib/WaterLevel.h"
           }
         ],
         "folders": []
