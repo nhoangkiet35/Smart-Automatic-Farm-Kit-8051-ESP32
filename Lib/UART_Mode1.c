@@ -21,9 +21,9 @@ void UART_Init()
     TMOD |= 0x20;       // Timer1 Mode 2: 8-bit auto-reload
 
     /* Formula for calculating Timer1 register value for baud rate: TH1=TL1
-    TH1 = 256 - (11059200 / (57600 * 32 * 12)) = 0xFF */
-    TH1 = 0xFF; // baud rate = 57600
-    TL1 = 0XFF; // baud rate = 57600
+    TH1 = 256 - (11059200 / (57600 * 32 * 12)) = 256 (0x64) */
+    TH1 = 0x64; // baud rate = 57600
+    TL1 = 0X64; // baud rate = 57600
 
     ES = 1;  // Enable UART interrupt
     EA = 1;  // Enable global interrupts

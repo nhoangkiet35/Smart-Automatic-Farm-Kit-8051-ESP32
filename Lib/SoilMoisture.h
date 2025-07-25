@@ -4,7 +4,7 @@
 #include <REGX52.H>
 
 // Define digital pin
-sbit SOIL_MOISTURE_PIN = P1 ^ 0; // Digital pin D0
+sbit SOIL_MOISTURE_PIN = P2 ^ 4; // Digital pin D0
 
 // Function prototypes
 void SoilMoisture_Init(void);

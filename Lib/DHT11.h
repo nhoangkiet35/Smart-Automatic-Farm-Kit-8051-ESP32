@@ -10,7 +10,7 @@
 #include <REGX52.H>
 
 // Define pins to communicate with DHT11
-sbit DHT11 = P1 ^ 1; // Pin P1.1 connects to DHT11
+sbit DHT11 = P1 ^ 7; // Pin P1.7 connects to DHT11
 
 // Global variable to store data from DHT11
 extern int I_RH;     // Integer humidity
