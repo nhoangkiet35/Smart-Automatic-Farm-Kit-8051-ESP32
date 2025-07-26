@@ -17,10 +17,15 @@
 void UART_Init();
 
 /**
- * @brief Sends a single character via UART.
- * @param c The character to send.
+ * @brief Initializes Serial Enable Interrupt.
  */
-void UART_Write(char value);
+void Ext_Interrupt_Init();
+
+/**
+ * @brief Sends a single character via UART.
+ * @param ch The character to send.
+ */
+void UART_Write(char ch);
 
 /**
  * @brief Sends a null-terminated string via UART.

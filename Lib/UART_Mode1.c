@@ -1,15 +1,16 @@
 /*
+ * Universal Asynchronous Receiver-Transmitter (UART)
  * Created Date: Saturday, July 19th 2025, 10:16:57 am
  * Author: Hoang Kiet
  *
  * Description: Sent by UART_Send_String -> Push into buffer -> ISR transmits gradually
  */
 #include "UART_Mode1.h"
+#include <string.h> // Add memset() function
 
 #define TX_BUFFER_SIZE 16
 char tx_buffer[TX_BUFFER_SIZE];
-unsigned char tx_head = 0, tx_tail = 0;
-bit tx_busy = 0;
+unsigned char tx_buffer_index;
 
 /**
  * @brief Initializes UART in Mode 1 using Timer 1 for baud rate generation.
@@ -18,48 +19,44 @@ bit tx_busy = 0;
  */
 void UART_Init()
 {
-    SCON = 0x50 | 0x02; // Mode 1: 8-bit UART, enable TI interrupt, REN enabled (Tx Rx enable)
-    TMOD &= 0x0F;       // Clear upper 4 bits (Timer1)
-    TMOD |= 0x20;       // Timer1 Mode 2: 8-bit auto-reload
+    SCON = 0x50;  // Mode 1: 8-bit UART, REN enabled
+    TMOD &= 0x0F; // Clear Timer1 bits
+    TMOD |= 0x20; // Timer1 Mode 2 (8-bit auto-reload)
 
     /* Formula for calculating Timer1 register value for baud rate: TH1=TL1
-    TH1 = 256 - (11059200 / (9600 * 32 * 12)) */
-    TH1 = 0xFD; // 9600 bps
+        TH1 = 256 - (11059200 / (9600 * 32 * 12)) */
+    TH1 = 0xFD; // 9600 baud rate @ 11.0592 MHz
     TL1 = TH1;
-
-    SCON = 0x50; // Mode 1
-    ES = 1;      // Enable UART interrupt
-    EA = 1;      // Enable global interrupts
-    TR1 = 1;     // Start Timer1
+    TR1 = 1; // Start Timer1
+    TI = 1;  // Set TI flag to ready for first transmit
 }
-// 0	External Interrupt 0 (INT0)
-// 1	Timer 0 Overflow
-// 2	External Interrupt 1 (INT1)
-// 3	Timer 1 Overflow
-// 4	Serial (UART)
+
+void Ext_Interrupt_Init()
+{
+    EA = 1; /* Enable global interrupt */
+    ES = 1; /* Enable serial interrupt */
+}
+
+// 0	External Interrupt 0 (INT0)     // 1	Timer 0 Overflow
+// 2	External Interrupt 1 (INT1)     // 3	Timer 1 Overflow    // 4	Serial (UART)
 void UART_ISR() interrupt 4
 {
-    if (TI) // Transmit interrupt
+    if (TI == 1) // Transmit interrupt
     {
-        TI = 0;
-        if (tx_head != tx_tail) // Buffer not empty
-        {
-            SBUF = tx_buffer[tx_tail];
-            tx_tail = (tx_tail + 1) % TX_BUFFER_SIZE;
-        }
-        else
-            tx_busy = 0; // Transmission complete
+        if (tx_buffer[tx_buffer_index] != 0) // Buffer not empty
+            SBUF = tx_buffer[tx_buffer_index++];
+        TI = 0; /* Clear TI flag */
     }
 }
 
 /**
  * @brief Transmitting 8 bit data
- * @param value Character to transmit.
+ * @param ch Character to transmit.
  */
-void UART_Write(char value)
+void UART_Write(char ch)
 {
-    SBUF = value;
-    while (!TI)
+    SBUF = ch; // Load char in SBUF register
+    while (TI == 0)
         ;   // Wait until transmitter is ready
     TI = 0; // Clear transmit flag
 }
@@ -70,8 +67,8 @@ void UART_Write(char value)
  */
 void UART_Write_String(char *str)
 {
-    while (*str)
-        UART_Write(*str++);
+    while (*str)            // Send each char of string till the NULL
+        UART_Write(*str++); // Call transmit data function
 }
 
 /**
@@ -80,26 +77,15 @@ void UART_Write_String(char *str)
  */
 void UART_Send_String(char *str)
 {
-    while (*str)
+    char i;
+    memset(tx_buffer, 0, TX_BUFFER_SIZE);
+    for (i = 0; str[i] != 0 && i < TX_BUFFER_SIZE; i++)
     {
-        if ((tx_head + 1) % TX_BUFFER_SIZE != tx_tail) // Buffer not full
-        {
-            tx_buffer[tx_head] = *str++;
-            tx_head = (tx_head + 1) % TX_BUFFER_SIZE;
-            if (!tx_busy)
-            {
-                tx_busy = 1;
-                SBUF = tx_buffer[tx_tail];
-                tx_tail = (tx_tail + 1) % TX_BUFFER_SIZE;
-            }
-        }
-        else
-        {
-            // Buffer full, wait for space (non-blocking)
-            while ((tx_head + 1) % TX_BUFFER_SIZE == tx_tail)
-                ;
-        }
+        tx_buffer[i] = str[i];
     }
+    tx_buffer[15] = 0;
+    SBUF = tx_buffer[0];
+    tx_buffer_index = 1;
 }
 
 /**

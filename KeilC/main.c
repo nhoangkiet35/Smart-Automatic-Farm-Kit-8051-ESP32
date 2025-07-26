@@ -40,7 +40,7 @@ sbit FAN_CONTROL  = P2 ^ 2; // IN3 for fan control
 #define BUTTON_ALERT    4 // Row 4, Col 4 // Button for low water level alert
 
 /* Timer variables for UART transmission */
-#define UART_SEND_INTERVAL 15 // Send every 30 seconds (15 * 2000ms = 30s)
+#define UART_SEND_INTERVAL 10 // Send every 30 seconds (15 * 2000ms = 30s)
 // static unsigned int last_soil = 0, last_temp = 0, last_hum = 0, last_water = 0;
 unsigned int uart_timer = 0;
 
@@ -56,7 +56,11 @@ void main(void)
 {
     unsigned int soil_moisture, water_level, temperature, humidity;
 
+    // Initialize matrix variables
+    P1 = 0xFF; // 1111 1111 // Row is high, column have internal pull-up
+
     // Initialize peripherals
+    // Ext_Interrupt_Init(); /* Call Ext. interrupt initialize */
     LCD_Init();
     UART_Init();
     delay(100); // Wait for system stabilization
@@ -64,9 +68,6 @@ void main(void)
     // Configure L298N control pins as output
     PUMP_CONTROL = TURN_OFF; // Initially off
     FAN_CONTROL  = TURN_OFF; // Initially off
-
-    // Initialize matrix variables
-    P1 = 0xFF; // 1111 1111 // Row is high, column have internal pull-up
 
     // Display initialization message on LCD
     LCD_String_xy(0, 0, "Smart Farm Kit  ");
@@ -120,7 +121,7 @@ void main(void)
                     beep(250, 2); // Beep to indicate error
                 }
                 break;
-                // Button 4 (P1.4-P1.0): Low water level alert
+            // Button 4 (P1.4-P1.0): Low water level alert
             case BUTTON_ALERT:
                 LCD_Command(0x01); // Clear LCD
                 LCD_String_xy(0, 0, "Alert Level:");
@@ -154,24 +155,25 @@ void main(void)
             FAN_CONTROL = TURN_OFF; // Cannot turn on fan
 
         /* DEBUG Send data to ESP32 via UART once 20s */
-        // Send UART data with 4 variables "soil,temp,hum,water"
+        // Send string UART data with 4 variables "soil,temp,hum,water"
         if (uart_timer == UART_SEND_INTERVAL) {
-            // if (abs(soil_moisture - last_soil) > 5 || abs(temperature - last_temp) > 1 ||
-            //     abs(humidity - last_hum) > 5 || abs(water_level - last_water) > 10) {
+            //     // if (abs(soil_moisture - last_soil) > 5 || abs(temperature - last_temp) > 1 ||
+            //     //     abs(humidity - last_hum) > 5 || abs(water_level - last_water) > 10) {
             // Format data for ESP32
-            sprintf(shared_buffer, "%d,%d,%d,%d\n", soil_moisture, temperature, humidity, water_level);
-            UART_Send_String(shared_buffer); // Send via UART
-            UART_Reset();
+            snprintf(shared_buffer, 10, "%u,%u,%u,%u", soil_moisture, temperature, humidity, water_level);
+            // UART_Write_String("\n0,34,50,1\r\n"); // Send via UART
+            UART_Send_String("0,34,50,1\r\n"); // Send via UART "xxx,xx,xx,xxx"
             // last_soil  = soil_moisture;
             // last_temp  = temperature;
             // last_hum   = humidity;
             // last_water = water_level;
             // Display sending status on LCD briefly
-            // LCD_Command(0x01); // Clear LCD
-            // LCD_String_xy(0, 0, "Data sent to    ");
-            // LCD_String_xy(1, 0, "ESP32 via UART  ");
-            // }
+            LCD_Command(0x01); // Clear LCD
+            LCD_String_xy(0, 0, shared_buffer);
+            LCD_String_xy(1, 0, "ESP32 via UART  ");
+            //    // }
             uart_timer = 0; // Reset timer
+            UART_Reset();   // Reset flag of uart
         }
         uart_timer++;
         // Delay before next iteration
