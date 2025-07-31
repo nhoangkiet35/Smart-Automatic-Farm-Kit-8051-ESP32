@@ -79,8 +79,8 @@ void main(void)
         /* Read sensor data periodically */
         soil_moisture = getSoilMoisture(); // 0-100
         water_level   = getWaterLevel();   // 1, 50, 100
-        temperature   = getTemperature();  // ℃
-        humidity      = getHumidity();     // %
+        temperature   = 33;                // ℃
+        humidity      = 66;                // %
 
         /* PASSED Handling button and sensor */
         key = scan_keypad(); // Active-low
@@ -160,9 +160,9 @@ void main(void)
             //     // if (abs(soil_moisture - last_soil) > 5 || abs(temperature - last_temp) > 1 ||
             //     //     abs(humidity - last_hum) > 5 || abs(water_level - last_water) > 10) {
             // Format data for ESP32
-            snprintf(shared_buffer, 10, "%u,%u,%u,%u", soil_moisture, temperature, humidity, water_level);
+            sprintf(shared_buffer, "%u,%u,%u,%u", soil_moisture, temperature, humidity, water_level);
             // UART_Write_String("\n0,34,50,1\r\n"); // Send via UART
-            UART_Send_String("0,34,50,1\r\n"); // Send via UART "xxx,xx,xx,xxx"
+            UART_Send_String(shared_buffer); // Send via UART "xxx,xx,xx,xxx"
             // last_soil  = soil_moisture;
             // last_temp  = temperature;
             // last_hum   = humidity;
