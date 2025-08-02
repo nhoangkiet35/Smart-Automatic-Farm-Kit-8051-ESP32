@@ -26,7 +26,6 @@ void Request(void);         // Send request signal to DHT11
 void Response(void);        // Receive response from DHT11
 int Receive_data(void);     // Receive 1 data byte (8 bits)
 
-unsigned int getTemperature(void);
-unsigned int getHumidity(void);
+void DHT11_Data(unsigned char *strTemp, unsigned char *strRH);
 
 #endif

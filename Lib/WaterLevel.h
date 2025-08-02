@@ -8,7 +8,6 @@ sbit WATER_LEVEL_MIN_PIN = P1 ^ 5; // Half level sensor
 sbit WATER_LEVEL_MAX_PIN = P1 ^ 6; // Full level sensor
 
 // Function prototypes
-void WaterLevel_Init(void);
 unsigned int getWaterLevel(void);
 
 #endif

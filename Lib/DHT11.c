@@ -4,7 +4,7 @@
  * Author: Hoang Kiet
  */
 #include "DHT11.h"
-#include "LCD_1602.h"
+#include <stdio.h>
 
 // Define global variables
 int I_RH, D_RH, I_Temp, D_Temp, CheckSum;
@@ -16,10 +16,11 @@ void timer_delay20ms(void)
      * Application: Used to create a low pulse of 20ms when sending a request signal to DHT11.
      * Pulse: A low signal lasting 20ms to activate DHT11.
      */
-    TMOD = 0x01; // Timer 0, mode 1 (16-bit)
-    TH0 = 0xB8;  // Load value for 20ms with 11.0592MHz crystal
-    TL0 = 0x0C;  // (65536 - 20000) = 45536 = 0xB80C
-    TR0 = 1;     // Enable Timer 0
+    TMOD &= 0xF0;
+    TMOD |= 0x01; // Timer 0, mode 1 (16-bit)
+    TH0 = 0xB8;   // Load value for 20ms with 11.0592MHz crystal
+    TL0 = 0x0C;   // (65536 - 20000) = 45536 = 0xB80C
+    TR0 = 1;      // Enable Timer 0
     while (TF0 == 0)
         ;    // Wait for overflow flag
     TR0 = 0; // Disable Timer 0
@@ -33,10 +34,11 @@ void timer_delay30us(void)
      * Application: Used to determine the logic of a data bit (0 or 1) based on the high pulse time.
      * Pulse: After 30µs, read the DHT11 pin status to distinguish between bit 0 (~26-28µs) and bit 1 (~70µs).
      */
-    TMOD = 0x01; // Timer 0, mode 1 (16-bit)
-    TH0 = 0xFF;  // Load value for ~30µs
-    TL0 = 0xF1;  // (65536 - 30) = 65506 = 0xFFF1
-    TR0 = 1;     // Turn on Timer 0
+    TMOD &= 0xF0; // Timer 0, mode 1 (16-bit)
+    TMOD |= 0x01; // Load value for ~30µs
+    TH0 = 0xFF;   // (65536 - 30) = 65506 = 0xFFF1
+    TL0 = 0xF1;   // Turn on Timer 0
+    TR0 = 1;
     while (TF0 == 0)
         ;    // Wait for overflow flag
     TR0 = 0; // Turn off Timer 0
@@ -101,38 +103,23 @@ int Receive_data(void)
     return c;
 }
 
-unsigned int getTemperature(void)
+void DHT11_Data(unsigned char *strTemp, unsigned char *strRH)
 {
-    /*
-     * Function: Read all data from DHT11 (humidity, temperature, checksum) and return the integer temperature.
-     * Pulse:
-     * - Send request signal (Request).
-     * - Wait for response (Response).
-     * - Receive 5 bytes of data (40 bits):
-     * + Byte 1: Integer humidity (I_RH).
-     * + Byte 2: Decimal humidity (D_RH).
-     * + Byte 3: Integer temperature (I_Temp).
-     * + Byte 4: Decimal temperature (D_Temp).
-     * + Byte 5: Checksum.
-     * - Check for errors by comparing the sum of the first 4 bytes with the checksum.
-     * Returns: Integer temperature (I_Temp) if there is no error, 0 if the checksum error.
-     */
-    Request();                 // Send request
-    Response();                // Wait for response
-    I_RH = Receive_data();     // Read integer humidity
-    D_RH = Receive_data();     // Read decimal humidity
-    I_Temp = Receive_data();   // Read integer temperature
-    D_Temp = Receive_data();   // Read decimal temperature
-    CheckSum = Receive_data(); // Read checksum
-
-    // Check checksum error
+    Request();
+    Response();
+    I_RH = Receive_data();
+    D_RH = Receive_data();
+    I_Temp = Receive_data();
+    D_Temp = Receive_data();
+    CheckSum = Receive_data();
     if ((I_RH + D_RH + I_Temp + D_Temp) != CheckSum)
-        return 0;
-
-    return I_Temp;
-}
-
-unsigned int getHumidity(void)
-{
-    return I_RH;
+    {
+        sprintf(strRH, "ERROR!");
+        sprintf(strTemp, "ERROR!");
+    }
+    else
+    {
+        sprintf(strRH, "%d.%d", I_RH, D_RH);
+        sprintf(strTemp, "%d.%d", I_Temp, D_Temp);
+    }
 }

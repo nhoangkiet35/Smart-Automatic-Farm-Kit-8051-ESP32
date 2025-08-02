@@ -7,7 +7,6 @@
 sbit SOIL_MOISTURE_PIN = P2 ^ 4; // Digital pin D0
 
 // Function prototypes
-void SoilMoisture_Init(void);
 unsigned int getSoilMoisture(void);
 
 #endif

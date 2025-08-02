@@ -2,16 +2,13 @@
  * Project: ESP32 MQTT + ThingsBoard Smart Automatic Farm Kit 8051-ESP32
  * Created Date: Wednesday, July 5th 2025, 3:39:18 pm
  */
-
 #include <REGX52.H>
 #include <stdio.h>
-#include <MATH.H>
+#include "STDLIB.H"
 
 #include "..\Lib\DHT11.h"
 #include "..\Lib\LCD_1602.h"
-#include "..\Lib\SoilMoisture.h"
 #include "..\Lib\UART_Mode1.h"
-#include "..\Lib\WaterLevel.h"
 #include "..\Lib\beep.h"
 #include "..\Lib\delay.h"
 
@@ -23,10 +20,12 @@
 sbit PUMP_CONTROL = P2 ^ 0; // IN1 for pump control
 sbit FAN_CONTROL  = P2 ^ 2; // IN3 for fan control
 
+/* Define digital pins as input */
+sbit WATER_LEVEL_MIN_PIN = P1 ^ 5; // Half level sensor
+sbit WATER_LEVEL_MAX_PIN = P1 ^ 6; // Full level sensor
+sbit SOIL_MOISTURE_PIN   = P2 ^ 4; // Digital pin D0
+
 /* Define button matrix 4x4 */
-#define ROW1 P1_7
-#define ROW2 P1_6
-#define ROW3 P1_5
 #define ROW4 P1_4
 #define COL1 P1_3
 #define COL2 P1_2
@@ -40,27 +39,24 @@ sbit FAN_CONTROL  = P2 ^ 2; // IN3 for fan control
 #define BUTTON_ALERT    4 // Row 4, Col 4 // Button for low water level alert
 
 /* Timer variables for UART transmission */
-#define UART_SEND_INTERVAL 10 // Send every 30 seconds (15 * 2000ms = 30s)
-// static unsigned int last_soil = 0, last_temp = 0, last_hum = 0, last_water = 0;
-unsigned int uart_timer = 0;
-
-/* Shared buffer for LCD and UART */
-unsigned char shared_buffer[16];
-unsigned char key;
+// #define UART_SEND_INTERVAL 5 // Send every 30 seconds (15 * 2000ms = 30s)
+// unsigned char uart_timer = 0;
 
 /* Function prototypes */
+unsigned int getWaterLevel(void);
+unsigned int getSoilMoisture(void);
+
 unsigned char scan_keypad(void);
+void display_common(const char *, const char *, const char *);
 
 /* Main function */
 void main(void)
 {
-    unsigned int soil_moisture, water_level, temperature, humidity;
-
-    // Initialize matrix variables
-    P1 = 0xFF; // 1111 1111 // Row is high, column have internal pull-up
+    /* Shared buffer for LCD and UART */
+    unsigned char shared_buffer[16], temp[6], hum[6], key;
+    unsigned int soil = 0, water = 0;
 
     // Initialize peripherals
-    // Ext_Interrupt_Init(); /* Call Ext. interrupt initialize */
     LCD_Init();
     UART_Init();
     delay(100); // Wait for system stabilization
@@ -69,124 +65,113 @@ void main(void)
     PUMP_CONTROL = TURN_OFF; // Initially off
     FAN_CONTROL  = TURN_OFF; // Initially off
 
+    // Initialize matrix variables
+    P1 = 0xFF; // 1111 1111 // All high
+
     // Display initialization message on LCD
-    LCD_String_xy(0, 0, "Smart Farm Kit  ");
-    LCD_String_xy(1, 0, "Initializing... ");
+    display_common("Smart Farm Kit", "Initializing...", "");
     delay(2000);
     LCD_Command(0x01); // Clear LCD
 
     while (1) {
-        /* Read sensor data periodically */
-        soil_moisture = getSoilMoisture(); // 0-100
-        water_level   = getWaterLevel();   // 1, 50, 100
-        temperature   = 33;                // ℃
-        humidity      = 66;                // %
+        /* PASSED Read sensor data periodically */
+        DHT11_Data(temp, hum);     // ℃, %
+        soil  = getSoilMoisture(); // 0-100
+        water = getWaterLevel();   // 1, 50, 100
 
         /* PASSED Handling button and sensor */
         key = scan_keypad(); // Active-low
         switch (key) {
-            // Button 1 (P1.4-P1.3): Display on LCD temperature and humidity
+            //* Button 1 (P1.4-P1.3): Display on LCD temperature and humidity
             case BUTTON_TEMP_HUM:
                 LCD_Command(0x01); // Clear LCD
-                sprintf(shared_buffer, "Temp: %d.%d *C", I_Temp, D_Temp);
+                sprintf(shared_buffer, "Temp: %s *C", temp);
                 LCD_String_xy(0, 0, shared_buffer);
-                sprintf(shared_buffer, "Hum : %d.%d", I_RH, D_RH);
+                sprintf(shared_buffer, "Hum : %s", hum);
                 LCD_String_xy(1, 0, shared_buffer);
-                LCD_String_xy(1, 11, "%");
+                LCD_String(" %");
                 break;
-            // Button 2 (P1.4-P1.2): Display control pump on LCD
+            //* Button 2 (P1.4-P1.2): Display control pump on LCD
             case BUTTON_PUMP:
-                LCD_Command(0x01); // Clear LCD
-                LCD_String_xy(0, 0, "Control Pump:");
-                sprintf(shared_buffer, "Soil: %s", soil_moisture ? "wet" : "dry");
-                LCD_String_xy(1, 0, shared_buffer);
-                // Dry soil and water available
-                if (soil_moisture <= 30 && water_level > 1)
-                    LCD_String_xy(1, 13, " ON");
-                else {
-                    LCD_String_xy(1, 13, "OFF");
-                    beep(250, 2); // Beep to indicate error
-                }
+                display_common("Control Pump:",
+                               soil ? "Soil: wet" : "Soil: dry",
+                               (soil <= 30 && water > 1) ? "ON" : "OFF");
                 break;
-            // Button 3 (P1.4-P1.1): Display control fan on LCD
+            //* Button 3 (P1.4-P1.1): Display control fan on LCD
             case BUTTON_FAN:
-                LCD_Command(0x01); // Clear LCD
-                LCD_String_xy(0, 0, "Control Fan:");
-                sprintf(shared_buffer, "Temp: %s", temperature >= 35 ? "high" : "stable");
-                LCD_String_xy(1, 0, shared_buffer);
-                if (temperature >= 35) // High temperature
-                    LCD_String_xy(1, 13, " ON");
-                else {
-                    LCD_String_xy(1, 13, "OFF");
-                    beep(250, 2); // Beep to indicate error
-                }
+                display_common("Control Fan:",
+                               atoi(temp) >= 35 ? "Temp: high" : "Temp: stable",
+                               atoi(temp) >= 35 ? "ON" : "OFF");
                 break;
-            // Button 4 (P1.4-P1.0): Low water level alert
+            //* Button 4 (P1.4-P1.0): Low water level alert
             case BUTTON_ALERT:
-                LCD_Command(0x01); // Clear LCD
-                LCD_String_xy(0, 0, "Alert Level:");
-                if (water_level == 1) {
-                    LCD_String_xy(1, 0, "Empty");
-                    beep(500, 3); // Beep three times
-                } else if (water_level == 50) {
-                    LCD_String_xy(1, 0, "Half");
-                } else if (water_level == 100) {
-                    LCD_String_xy(1, 0, "Full");
-                }
+                display_common("Alert Level:",
+                               water == 1 ? "Empty" : water == 50 ? "Half"
+                                                  : water == 100  ? "Full"
+                                                                  : "ERROR!",
+                               water == 1 ? "OFF" : "");
                 break;
             default:
                 /* PENDING Handle LCD display restoration */
-                LCD_String_xy(0, 0, "Enter a number: ");
-                sprintf(shared_buffer, "> #1 #2 #3 #4 %2d", uart_timer);
-                LCD_String_xy(1, 0, shared_buffer);
+                display_common("Enter a number:", "> 1 2 3 4", "");
                 break;
         }
 
-        // TARGET: Automatic act pump
-        if (soil_moisture <= 30 && water_level > 1) // Dry soil and water available
-            PUMP_CONTROL = TURN_ON;
-        else
-            PUMP_CONTROL = TURN_OFF; // Cannot turn on pump
+        /* TARGET: Automatic act pump - Dry soil and water available*/
+        PUMP_CONTROL = (soil <= 30 && water > 1) ? TURN_ON : TURN_OFF;
 
-        // TARGET: Automatic act fan
-        if (temperature >= 35) // High temperature
-            FAN_CONTROL = TURN_ON;
-        else
-            FAN_CONTROL = TURN_OFF; // Cannot turn on fan
+        /* TARGET: Automatic act fan - High temperature */
+        FAN_CONTROL = (atoi(temp) >= 35) ? TURN_ON : TURN_OFF;
 
-        /* DEBUG Send data to ESP32 via UART once 20s */
-        // Send string UART data with 4 variables "soil,temp,hum,water"
-        if (uart_timer == UART_SEND_INTERVAL) {
-            //     // if (abs(soil_moisture - last_soil) > 5 || abs(temperature - last_temp) > 1 ||
-            //     //     abs(humidity - last_hum) > 5 || abs(water_level - last_water) > 10) {
-            // Format data for ESP32
-            sprintf(shared_buffer, "%u,%u,%u,%u", soil_moisture, temperature, humidity, water_level);
-            // UART_Write_String("\n0,34,50,1\r\n"); // Send via UART
-            UART_Send_String(shared_buffer); // Send via UART "xxx,xx,xx,xxx"
-            // last_soil  = soil_moisture;
-            // last_temp  = temperature;
-            // last_hum   = humidity;
-            // last_water = water_level;
-            // Display sending status on LCD briefly
-            LCD_Command(0x01); // Clear LCD
-            LCD_String_xy(0, 0, shared_buffer);
-            LCD_String_xy(1, 0, "ESP32 via UART  ");
-            //    // }
-            uart_timer = 0; // Reset timer
-            UART_Reset();   // Reset flag of uart
-        }
-        uart_timer++;
+        /* DEBUG Send data to ESP32 via UART once 20s
+         * Send string UART data with 4 variables "soil,temp,hum,water"
+         * NOTE: Don't send too much data at once, as it may result in data loss or unexpected errors.
+         */
+        // Format string safely data for ESP32
+        sprintf(shared_buffer, "%u,%s,", soil, temp);
+        UART_Send_String(shared_buffer);
+        sprintf(shared_buffer, "%s,%u", hum, water);
+        UART_Send_String(shared_buffer);
+
         // Delay before next iteration
         delay(2000); // Short delay to keep system responsive
     }
 }
 
+unsigned int getSoilMoisture(void)
+{
+    /* Active-low mode
+     * Function: Read soil moisture level from digital pin.
+     * Returns: 100 (wet) or 0 (dry) based on SOIL_MOISTURE_PIN state.
+     */
+    // Read pin once to avoid noise
+    unsigned int pin_state = SOIL_MOISTURE_PIN;
+    if (pin_state == 0) // Low = wet
+        return 100;
+    else // High = dry
+        return 0;
+}
+
+unsigned int getWaterLevel(void)
+{
+    /* Read water level using two digital pins.
+     * Return: 1 -> Empty, 50 -> Half, 100 -> Full
+     */
+    unsigned int min_pin = WATER_LEVEL_MIN_PIN;
+    unsigned int max_pin = WATER_LEVEL_MAX_PIN;
+    if (min_pin == 0 && max_pin == 0) {
+        return 1; // Empty
+    } else if (min_pin == 1 && max_pin == 0) {
+        return 50; // Half
+    } else if (min_pin == 1 && max_pin == 1) {
+        return 100; // Full
+    }
+    return 0; // Invalid state (fail-safe)
+}
+
 unsigned char scan_keypad(void)
 {
     // Scan Row 4 // Active-low
-    ROW1 = 1;
-    ROW2 = 1;
-    ROW3 = 1;
     ROW4 = 0;
     delay(2);
     if (COL1 == 0) {
@@ -207,4 +192,13 @@ unsigned char scan_keypad(void)
         if (COL4 == 0) return BUTTON_ALERT;
     }
     return 0; // No button pressed
+}
+
+void display_common(const char *header, const char *info, const char *status)
+{
+    LCD_Command(0x01);
+    LCD_String_xy(0, 0, header);
+    LCD_String_xy(1, 0, info);
+    LCD_String_xy(1, 13, status);
+    if (status == "OFF") beep(250, 2); // Beep to indicate
 }

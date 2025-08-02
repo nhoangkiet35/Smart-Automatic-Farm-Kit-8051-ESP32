@@ -17,15 +17,10 @@
 void UART_Init();
 
 /**
- * @brief Initializes Serial Enable Interrupt.
- */
-void Ext_Interrupt_Init();
-
-/**
  * @brief Sends a single character via UART.
- * @param ch The character to send.
+ * @param value The character to send.
  */
-void UART_Write(char ch);
+void UART_Write(char value);
 
 /**
  * @brief Sends a null-terminated string via UART.
@@ -52,9 +47,6 @@ char UART_Read(void);
  */
 void UART_Read_String(char *buffer, unsigned char max_length);
 
-/**
- * @brief Clear UART buffers and reset transmission state.
- */
-void UART_Reset(void);
+
 
 #endif // _UART_MODE1_H_

@@ -1,6 +1,6 @@
 /* ESP32 MQTT + ThingsBoard Smart Automatic Farm Kit 8051-ESP32 */
 #include <WiFi.h>
-#include <PubSubClient.h>  // Missing include
+#include <PubSubClient.h> 
 #include <ArduinoJson.h>
 #include <HardwareSerial.h>
 
@@ -11,14 +11,14 @@
 #define THINGSBOARD_SERVER "thingsboard.cloud"
 #define MQTT_PORT          1883
 
+// ========== Pin Definitions ==========
+#define PUMP_PIN           26  // GPIO26 for water pump
+#define FAN_PIN            27  // GPIO27 for fan
+
 // ==================== CONFIGURATION ====================
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
 HardwareSerial SerialUART(2); // UART2: GPIO16=RX, GPIO17=TX
-
-// ========== GPIO for controlling Pump & Fan ==========
-#define PUMP_PIN 4
-#define FAN_PIN  5
 
 // ========== Sensor Data Structure ==========
 struct SensorData {
@@ -34,7 +34,7 @@ struct SensorData {
 void setup()
 {
     // Initialize Serial for debugging
-    Serial.begin(115200);
+    Serial.begin(9600);
     delay(1000);
     Serial.println("\n=== ESP32 ThingsBoard Smart Farm System ===");
     Serial.println("Initializing...");
@@ -43,17 +43,19 @@ void setup()
     SerialUART.begin(9600, SERIAL_8N1, 16, 17);
     Serial.println("✓ UART2 initialized (9600 baud, GPIO16/17)");
 
-    // Setup GPIO output
+    // Initialize motor pins
     pinMode(PUMP_PIN, OUTPUT);
     pinMode(FAN_PIN, OUTPUT);
-    digitalWrite(PUMP_PIN, LOW); // OFF by default
-    digitalWrite(FAN_PIN, LOW);  // OFF by default
+    digitalWrite(PUMP_PIN, LOW); // Pump OFF initially
+    digitalWrite(FAN_PIN, LOW);  // Fan OFF initially
+    Serial.println("✓ Motor pins initialized (Pump: GPIO26, Fan: GPIO27)");
 
     // Initialize WiFi
     InitWiFi();
 
+    // Set MQTT server and callback
     client.setServer(THINGSBOARD_SERVER, MQTT_PORT);
-    client.setCallback(callback);
+    client.setCallback(callback); // Set callback for RPC
 
     // System ready
     Serial.println("=== System Ready ===");
@@ -94,11 +96,6 @@ void InitWiFi()
 
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("\n✓ WiFi connected successfully!");
-        Serial.print("IP address: ");
-        Serial.println(WiFi.localIP());
-        Serial.print("Signal strength: ");
-        Serial.print(WiFi.RSSI());
-        Serial.println(" dBm");
     } else {
         Serial.println("\n❌ WiFi connection failed!");
         Serial.println("Please check SSID and password");
@@ -156,10 +153,6 @@ bool parseSensorData(String data)
     sensorData.humidity = data.substring(commaIndex2 + 1, commaIndex3).toInt();
     sensorData.water_level = data.substring(commaIndex3 + 1).toInt();
     
-    // Update pump and fan status based on GPIO states
-    sensorData.pump_status = digitalRead(PUMP_PIN);
-    sensorData.fan_status = digitalRead(FAN_PIN);
-    
     return true;
 }
 
@@ -175,8 +168,6 @@ void publishSensorData()
     telemetry["waterLevel"] = sensorData.water_level;
     telemetry["pumpStatus"] = sensorData.pump_status;
     telemetry["fanStatus"] = sensorData.fan_status;
-    telemetry["wifiRSSI"] = WiFi.RSSI();
-    telemetry["freeHeap"] = ESP.getFreeHeap();
     
     char buffer[200];
     serializeJson(telemetry, buffer);
@@ -194,73 +185,63 @@ void printSensorData()
     Serial.println("  🌱 Soil Moisture: " + String(sensorData.soil_moisture) + "%");
     Serial.println("  🌡️ Temperature: " + String(sensorData.temperature) + "°C");
     Serial.println("  💧 Humidity: " + String(sensorData.humidity) + "%");
-    Serial.println("  🚰 Water Level: " + String(sensorData.water_level));
+    Serial.println("  🚰 Water Level: " + String(sensorData.water_level)+ "%");
     Serial.println("  🚰 Pump: " + String(sensorData.pump_status ? "ON" : "OFF"));
     Serial.println("  🌀 Fan: " + String(sensorData.fan_status ? "ON" : "OFF"));
     Serial.println("==================");
 }
 
 // ========== Handle Incoming RPC ==========
-void callback(char *topic, byte *payload, unsigned int length)
+void callback(char* topic, byte* payload, unsigned int length)
 {
-    Serial.print("RPC received [");
-    Serial.print(topic);
-    Serial.print("]: ");
+    Serial.println("📩 RPC Received on topic: " + String(topic));
+    
+    // Convert payload to String
+    String payloadStr;
+    for (unsigned int i = 0; i < length; i++) {
+        payloadStr += (char)payload[i];
+    }
 
-    payload[length] = '\0'; // Ensure string end
-    Serial.println((char *)payload);
-
-    StaticJsonDocument<200> doc;
-    DeserializationError error = deserializeJson(doc, payload);
+    // Parse JSON payload
+    DynamicJsonDocument doc(256);
+    DeserializationError error = deserializeJson(doc, payloadStr);
     if (error) {
-        Serial.print("JSON parse error: ");
-        Serial.println(error.c_str());
+        Serial.println("❌ Failed to parse RPC payload");
         return;
     }
 
-    const char *method = doc["method"];
-    bool param = doc["params"];
+    // Extract the "params" value and "method"
+    bool state = doc["params"];
+    String method = doc["method"];
 
-    if (strcmp(method, "setPump") == 0) {
-        digitalWrite(PUMP_PIN, param ? HIGH : LOW);
-        sensorData.pump_status = param;
-        Serial.print("Pump turned ");
-        Serial.println(param ? "ON" : "OFF");
+    if (method == "setPump") {
+        sensorData.pump_status = state;
+        digitalWrite(PUMP_PIN, state ? HIGH : LOW);
+        Serial.println("💧 Pump set to: " + String(state ? "ON" : "OFF"));
         
-        // Send confirmation back to ThingsBoard
-        sendRPCResponse(topic, method, param);
-    } else if (strcmp(method, "setFan") == 0) {
-        digitalWrite(FAN_PIN, param ? HIGH : LOW);
-        sensorData.fan_status = param;
-        Serial.print("Fan turned ");
-        Serial.println(param ? "ON" : "OFF");
+        // Send command to 8051 via UART
+        SerialUART.println("PUMP:" + String(state ? "ON" : "OFF"));
         
-        // Send confirmation back to ThingsBoard
-        sendRPCResponse(topic, method, param);
-    } else {
-        Serial.println("Unknown RPC method: " + String(method));
+        // Publish updated status to ThingsBoard
+        if (digitalRead(PUMP_PIN) == HIGH) {
+            client.publish("v1/devices/me/attributes", "{\"pumpStatus\": \"true\"}");
+        } else {
+            client.publish("v1/devices/me/attributes", "{\"pumpStatus\": \"false\"}");
+        }
+    }
+    else if (method == "setFan") {
+        sensorData.fan_status = state;
+        digitalWrite(FAN_PIN, state ? HIGH : LOW);
+        Serial.println("🌀 Fan set to: " + String(state ? "ON" : "OFF"));
+        
+        // Send command to 8051 via UART
+        SerialUART.println("FAN:" + String(state ? "ON" : "OFF"));
+        
+        // Publish updated status to ThingsBoard
+        if (digitalRead(FAN_PIN) == HIGH) {
+            client.publish("v1/devices/me/attributes", "{\"fanStatus\": \"true\"}");
+        } else {
+            client.publish("v1/devices/me/attributes", "{\"fanStatus\": \"false\"}");
+        }
     }
 }
-
-void sendRPCResponse(char* topic, const char* method, bool status)
-{
-    // Extract request ID from topic
-    String topicStr = String(topic);
-    int requestIdStart = topicStr.lastIndexOf('/') + 1;
-    String requestId = topicStr.substring(requestIdStart);
-    
-    // Create response topic
-    String responseTopic = "v1/devices/me/rpc/response/" + requestId;
-    
-    // Create response payload
-    StaticJsonDocument<100> response;
-    response["method"] = method;
-    response["status"] = status ? "success" : "failed";
-    
-    char buffer[100];
-    serializeJson(response, buffer);
-    
-    client.publish(responseTopic.c_str(), buffer);
-}
-
-

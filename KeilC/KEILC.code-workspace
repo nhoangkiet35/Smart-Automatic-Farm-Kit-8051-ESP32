@@ -4,6 +4,15 @@
             "path": "."
         }
     ],
+<<<<<<< HEAD
+    "settings": {
+        "cSpell.words": [
+            "MQTT",
+            "utoa"
+        ]
+    },
+=======
     "settings": {},
+>>>>>>> 62c0b0a8507e82625158cce4bfc82cbd1797250b
     "extensions": {}
 }

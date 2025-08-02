@@ -3,6 +3,8 @@
 
 .workspace
 .workspaces
+*.zip
+*.7z
 
 ### C ###
 # Prerequisites

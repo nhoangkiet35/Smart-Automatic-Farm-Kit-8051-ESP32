@@ -11,9 +11,6 @@
         "name": "Source Group 1",
         "files": [
           {
-            "path": "STARTUP.A51"
-          },
-          {
             "path": "main.c"
           },
           {
@@ -45,18 +42,6 @@
           },
           {
             "path": "../Lib/beep.h"
-          },
-          {
-            "path": "../Lib/SoilMoisture.c"
-          },
-          {
-            "path": "../Lib/SoilMoisture.h"
-          },
-          {
-            "path": "../Lib/WaterLevel.c"
-          },
-          {
-            "path": "../Lib/WaterLevel.h"
           }
         ],
         "folders": []
@@ -71,7 +56,11 @@
   },
   "targets": {
     "Target 1": {
-      "excludeList": [],
+      "excludeList": [
+        "<virtual_root>/Source Group 1/WaterLevel.c",
+        "<virtual_root>/Source Group 1/SoilMoisture.c",
+        "<virtual_root>/Source Group 1/STARTUP.A51"
+      ],
       "toolchain": "Keil_C51",
       "compileConfig": {
         "options": "null"

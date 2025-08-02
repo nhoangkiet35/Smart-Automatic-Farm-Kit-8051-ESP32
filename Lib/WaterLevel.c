@@ -1,12 +1,5 @@
 #include "WaterLevel.h"
 
-// Initialize Water Level Sensor
-void WaterLevel_Init(void)
-{
-    // Optionally set port direction if needed (8051 ports are quasi-bidirectional by default)
-    // Doing nothing here is fine
-}
-
 unsigned int getWaterLevel(void)
 {
     /*
